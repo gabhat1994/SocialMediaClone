@@ -22,7 +22,8 @@ firebase.initializeApp(firebaseConfig);
 const db = admin.firestore();
 
 app.get("/screams", (req, res) => {
-  db()
+  admin
+    .firestore()
     .collection("screams")
     .orderBy("createdAt", "desc")
     .get()
@@ -41,14 +42,48 @@ app.get("/screams", (req, res) => {
     .catch((err) => console.error(err));
 });
 
-app.post("/scream", (req, res) => {
+const FBAuth = (req, res, next) => {
+  let idToken;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    idToken = req.headers.authorization.split("Bearer ")[1];
+  } else {
+    console.error("No token found");
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then((decodedToken) => {
+      console.log(decodedToken);
+      req.user = decodedToken;
+      return db
+        .collection("users")
+        .where("userId", "==", req.user.uid)
+        .limit(1)
+        .get();
+    })
+    .then((data) => {
+      req.user.handle = data.docs[0].data().handle;
+      return next();
+    })
+    .catch((err) => {
+      console.error("Error while verifying Token", err);
+      return res.status(403).json(err);
+    });
+};
+
+app.post("/scream", FBAuth, (req, res) => {
   const newScream = {
     body: req.body.body,
-    userHandle: req.body.userHandle,
+    userHandle: req.user.handle,
     createdAt: new Date().toISOString(),
   };
 
-  db()
+  admin
+    .firestore()
     .collection("screams")
     .add(newScream)
     .then((doc) => {
@@ -65,15 +100,6 @@ const isEmpt = (string) => {
   else return false;
 };
 
-const isEmail = (email) => {
-  const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  if (email.match(regex)) {
-    return true;
-  } else {
-    return false;
-  }
-};
-
 //signup Route
 app.post("/signup", (req, res) => {
   const newUser = {
@@ -86,8 +112,6 @@ app.post("/signup", (req, res) => {
 
   if (isEmpt(newUser.email)) {
     errors.email = "Must not be empty";
-  } else if (!isEmail(newUser.email)) {
-    errors.email = "Must be a valid email address";
   }
 
   if (isEmpt(newUser.password)) {
@@ -152,8 +176,6 @@ app.post("/login", (req, res) => {
 
   if (isEmpt(user.email)) {
     errors.email = "Must not be empty";
-  } else if (!isEmail(user.email)) {
-    errors.email = "Must be a valid email address";
   }
 
   if (isEmpt(user.password)) {
