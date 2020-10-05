@@ -27,7 +27,7 @@ exports.validateSignUpData = (data) => {
   };
 };
 
-exports.validateloginData = (data) => {
+exports.validateLoginData = (data) => {
   let errors = {};
 
   if (isEmpt(data.email)) {
