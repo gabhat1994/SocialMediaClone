@@ -18,7 +18,7 @@ exports.signup = (req, res) => {
 
   const { valid, errors } = validateSignUpData(newUser);
 
-  if (!valid) return res.status(400).json({ errors });
+  if (!valid) return res.status(400).json(errors);
 
   let token, userId;
   db.doc(`/users/${newUser.handle}`)
@@ -66,17 +66,9 @@ exports.login = (req, res) => {
     email: req.body.email,
     password: req.body.password,
   };
-  let errors = {};
+  const { valid, errors } = validateLoginData(user);
 
-  if (isEmpt(user.email)) {
-    errors.email = "Must not be empty";
-  }
-
-  if (isEmpt(user.password)) {
-    errors.password = "Must not be empty";
-  }
-
-  if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
+  if (!valid) return res.status(400).json(errors);
   firebase
     .auth()
     .signInWithEmailAndPassword(user.email, user.password)
