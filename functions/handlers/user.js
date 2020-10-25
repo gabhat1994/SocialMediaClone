@@ -6,8 +6,13 @@ const firebase = require("firebase");
 
 firebase.initializeApp(config);
 
-const { validateSignUpData, validateLoginData } = require("../util/validators");
+const {
+  validateSignUpData,
+  validateLoginData,
+  reduceUserDetails,
+} = require("../util/validators");
 
+// eslint-disable-next-line consistent-return
 exports.signup = (req, res) => {
   const newUser = {
     email: req.body.email,
@@ -64,6 +69,7 @@ exports.signup = (req, res) => {
     });
 };
 
+// eslint-disable-next-line consistent-return
 exports.login = (req, res) => {
   const user = {
     email: req.body.email,
@@ -102,7 +108,11 @@ exports.uploadImage = (req, res) => {
   const busboy = new BusBoy({ headers: req.headers });
   let imageFileName;
   let imageToBeUploaded = {};
+  // eslint-disable-next-line consistent-return
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+    if (mimetype !== "image/jpeg" && mimetype !== "image/jpeg") {
+      return res.status(400).json({ error: "Wrong file type sumitted" });
+    }
     const imageExtension = filename.split(".")[filename.split(".").length - 1];
     imageFileName = `Math.round(Math.random() * 100000000).${imageExtension}`;
     const filepath = path.join(os.tmpdir(), imageFileName);
@@ -136,4 +146,45 @@ exports.uploadImage = (req, res) => {
       });
   });
   busboy.end(req.rawBody);
+};
+
+exports.addDetails = (req, res) => {
+  let userDetails = reduceUserDetails(req.body);
+  db.doc(`/users/${req.user.handle}`)
+    .update(userDetails)
+    .then(() => {
+      return res.json({ message: "Details added successfully" });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500);
+    });
+};
+
+exports.getAuthenticatedUser = (req, res) => {
+  let userData = {};
+  db.doc(`/users/${req.user.handle}`)
+    .get()
+    // eslint-disable-next-line consistent-return
+    .then((doc) => {
+      // eslint-disable-next-line promise/always-return
+      if (doc.exists) {
+        userData.credentials = doc.data();
+        return db
+          .collection("likes")
+          .where("userHandle", "==", req.user.handle)
+          .get();
+      }
+    })
+    .then((data) => {
+      userData.likes = [];
+      data.forEach((doc) => {
+        userData.likes.push(doc.data());
+      });
+      return res.json(userData);
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
 };

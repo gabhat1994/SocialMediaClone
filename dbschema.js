@@ -8,4 +8,40 @@ let db = {
       commentCount: 2,
     },
   ],
+  users: [
+    {
+      userId: "dewfrgtrg",
+      email: "test@test.com",
+      handle: "user",
+      createdAt: "2018884-3474",
+      imageUrl: "image/bcdsbcdbcdscdcnn",
+      bio: "hello my name is user",
+      website: "httpsL//user.com",
+      location: "Lodon ,UK",
+    },
+  ],
+};
+
+const userDetails = {
+  //Redux data
+  credentials: {
+    userId: "dewfrgtrg",
+    email: "test@test.com",
+    handle: "user",
+    createdAt: "2018884-3474",
+    imageUrl: "image/bcdsbcdbcdscdcnn",
+    bio: "hello my name is user",
+    website: "httpsL//user.com",
+    location: "Lodon ,UK",
+  },
+  likes: [
+    {
+      userHandle: "user",
+      screamId: "tfgsjcdjkc",
+    },
+    {
+      userHandle: "user",
+      screamId: "tfgsjcdjkc",
+    },
+  ],
 };
